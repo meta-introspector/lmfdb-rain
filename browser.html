@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Zone 42 Matrix Rain - LMFDB Elliptic Curves</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            background: #000;
+            color: #0f0;
+            font-family: 'Courier New', monospace;
+            overflow: hidden;
+        }
+        #canvas {
+            display: block;
+            width: 100vw;
+            height: 100vh;
+        }
+        #info {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            background: rgba(0, 0, 0, 0.8);
+            padding: 20px;
+            border: 2px solid #0f0;
+            max-width: 400px;
+        }
+        h1 { color: #0ff; margin-bottom: 10px; font-size: 20px; }
+        .band { margin: 5px 0; }
+        .red { color: #f00; }
+        .yellow { color: #ff0; }
+        .green { color: #0f0; }
+        .cyan { color: #0ff; }
+        .blue { color: #00f; }
+        .magenta { color: #f0f; }
+        #curve-info {
+            position: absolute;
+            bottom: 20px;
+            left: 20px;
+            background: rgba(0, 0, 0, 0.8);
+            padding: 15px;
+            border: 2px solid #0ff;
+            min-width: 300px;
+        }
+        .emoji { font-size: 24px; }
+        .curve-num { color: #f00; font-weight: bold; }
+    </style>
+</head>
+<body>
+    <canvas id="canvas"></canvas>
+    
+    <div id="info">
+        <h1>🌧️ Zone 42 Matrix Rain 🌧️</h1>
+        <p>LMFDB Elliptic Curves Decoded</p>
+        <div class="band red">🔴 Red: 0-828</div>
+        <div class="band yellow">🟡 Yellow: 828-1656</div>
+        <div class="band green">🟢 Green: 1656-2484</div>
+        <div class="band cyan">🔵 Cyan: 2484-3312</div>
+        <div class="band blue">🔵 Blue: 3312-4140</div>
+        <div class="band magenta">🟣 Magenta: 4140-4968</div>
+        <p style="margin-top: 10px; font-size: 12px;">
+            Pipeline: Gödel → Reed-Solomon → FRACTRAN → Emoji
+        </p>
+    </div>
+    
+    <div id="curve-info">
+        <div id="hover-curve">Hover over emojis to see curves</div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+        
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+        
+        // 10-fold way × 15 Hecke primes
+        const tenfold = ['A', 'AIII', 'AI', 'BDI', 'D', 'DIII', 'AII', 'CII', 'C', 'CI'];
+        const hecke = [2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31, 37, 41, 43, 47];
+        const symbols = [];
+        for (let fold of tenfold) {
+            for (let prime of hecke) {
+                symbols.push(fold + prime);
+            }
+        }
+        
+        const zone42Emojis = ['🍄', '🔮', '⚡', '🌌', '💰', '🏠', '👹', '🎯'];
+        const vibeEmojis = {
+            0: ['🌌', '⭐', '✨', '🌠'], // COSMIC
+            1: ['🔥', '🌋', '☄️', '💥'], // FIRE
+            2: ['💧', '🌊', '💦', '🌀'], // WATER
+            3: ['🌍', '🏔️', '🌲', '🗿'], // EARTH
+            4: ['💨', '🦅', '☁️', '🌪️'], // AIR
+            5: ['⚡', '🌩️', '🔋', '⚙️'], // ELECTRIC
+            6: ['🌙', '🌑', '🌜', '🌛'], // LUNAR
+            7: ['☀️', '🌞', '🌅', '🌄']  // SOLAR
+        };
+        
+        const colors = ['#f00', '#ff0', '#0f0', '#0ff', '#00f', '#f0f'];
+        const curveBands = [
+            [0, 828], [828, 1656], [1656, 2484],
+            [2484, 3312], [3312, 4140], [4140, 4968]
+        ];
+        
+        class Drop {
+            constructor(x) {
+                this.x = x;
+                this.y = Math.random() * -500;
+                this.speed = 2 + Math.random() * 3;
+                this.colorIdx = Math.floor(x / (canvas.width / 40)) % 6;
+                this.color = colors[this.colorIdx];
+                this.curveIdx = Math.floor(Math.random() * 828) + curveBands[this.colorIdx][0];
+                this.chars = [];
+                this.emojis = [];
+                
+                // Generate falling characters
+                for (let i = 0; i < 20; i++) {
+                    if (Math.random() < 0.3) {
+                        const vibe = this.curveIdx % 8;
+                        const emoji = vibeEmojis[vibe][Math.floor(Math.random() * 4)];
+                        this.emojis.push({ char: emoji, y: i * 20, curveIdx: this.curveIdx });
+                    } else if (Math.random() < 0.5) {
+                        this.chars.push({ char: symbols[Math.floor(Math.random() * symbols.length)], y: i * 20 });
+                    }
+                }
+            }
+            
+            update() {
+                this.y += this.speed;
+                if (this.y > canvas.height + 400) {
+                    this.y = -400;
+                    this.curveIdx = Math.floor(Math.random() * 828) + curveBands[this.colorIdx][0];
+                }
+            }
+            
+            draw() {
+                ctx.fillStyle = this.color;
+                ctx.font = '16px monospace';
+                
+                for (let item of this.chars) {
+                    const y = this.y + item.y;
+                    if (y > 0 && y < canvas.height) {
+                        ctx.fillText(item.char, this.x, y);
+                    }
+                }
+                
+                ctx.font = '20px monospace';
+                for (let item of this.emojis) {
+                    const y = this.y + item.y;
+                    if (y > 0 && y < canvas.height) {
+                        ctx.fillText(item.char, this.x, y);
+                        ctx.fillStyle = '#f00';
+                        ctx.fillText(item.curveIdx % 1000, this.x + 25, y);
+                        ctx.fillStyle = this.color;
+                    }
+                }
+            }
+        }
+        
+        const drops = [];
+        for (let i = 0; i < 40; i++) {
+            drops.push(new Drop(i * (canvas.width / 40)));
+        }
+        
+        function animate() {
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.05)';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            for (let drop of drops) {
+                drop.update();
+                drop.draw();
+            }
+            
+            requestAnimationFrame(animate);
+        }
+        
+        canvas.addEventListener('mousemove', (e) => {
+            const x = e.clientX;
+            const y = e.clientY;
+            
+            for (let drop of drops) {
+                for (let emoji of drop.emojis) {
+                    const emojiY = drop.y + emoji.y;
+                    if (Math.abs(x - drop.x) < 30 && Math.abs(y - emojiY) < 20) {
+                        const curveInfo = document.getElementById('hover-curve');
+                        curveInfo.innerHTML = `
+                            <span class="emoji">${emoji.char}</span>
+                            <span class="curve-num">${emoji.curveIdx}</span><br>
+                            <small>Curve Index: ${emoji.curveIdx} / 4968</small><br>
+                            <small>Band: ${Math.floor(emoji.curveIdx / 828)}</small><br>
+                            <small>Gödel → RS → FRACTRAN → Emoji</small>
+                        `;
+                        return;
+                    }
+                }
+            }
+        });
+        
+        animate();
+        
+        window.addEventListener('resize', () => {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        });
+    </script>
+</body>
+</html>
