@@ -1,0 +1,11 @@
+{
+  "fork_number": 1,
+  "fork_name": "cocoxhuang",
+  "merge_date": "2026-02-13T11:10:02-05:00",
+  "git_commit": "bb6c262329dd31a7915d7a353c3e9b3253b366e5",
+  "total_commits": 23659,
+  "database_file": "/home/mdupont/projects/kiro/data/lmfdb-incremental/databases/lmfdb_fork_1_cocoxhuang.sql",
+  "database_size": 391,
+  "unique_files": 281,
+  "f_omega": 31003
+}

@@ -1,0 +1,11 @@
+{
+  "fork_number": 4,
+  "fork_name": "rvisser7",
+  "merge_date": "2026-02-13T11:10:04-05:00",
+  "git_commit": "5ad24cb52bdf863b70853f16cfd5442b43445032",
+  "total_commits": 23744,
+  "database_file": "/home/mdupont/projects/kiro/data/lmfdb-incremental/databases/lmfdb_fork_4_rvisser7.sql",
+  "database_size": 385,
+  "unique_files": 12,
+  "f_omega": 525
+}

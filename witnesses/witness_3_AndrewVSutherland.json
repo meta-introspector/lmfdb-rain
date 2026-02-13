@@ -1,0 +1,11 @@
+{
+  "fork_number": 3,
+  "fork_name": "AndrewVSutherland",
+  "merge_date": "2026-02-13T11:10:03-05:00",
+  "git_commit": "ba39f9511bd31eaafb22c9788a24ae3f1b7435f6",
+  "total_commits": 23719,
+  "database_file": "/home/mdupont/projects/kiro/data/lmfdb-incremental/databases/lmfdb_fork_3_AndrewVSutherland.sql",
+  "database_size": 412,
+  "unique_files": 12,
+  "f_omega": 640
+}

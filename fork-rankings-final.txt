@@ -1,0 +1,64 @@
+# LMFDB Fork Rankings by F_ω
+# F_ω = unique_objects × (commits mod 71) × (1 + prime_score)
+# Sorted by F_ω (descending)
+#
+# Format: F_ω | unique_objects | commits | commits%71 | prime_score | fork_name
+
+31003 | 721 | 22549 | 42 | 0 | cocoxhuang
+990 | 33 | 23601 | 29 | 0 | jacobjpg
+640 | 10 | 23635 | 63 | 0 | AndrewVSutherland
+525 | 35 | 23657 | 14 | 0 | rvisser7
+184 | 4 | 22623 | 45 | 0 | SamSchiavone
+135 | 15 | 19817 | 8 | 0 | gunnells
+105 | 3 | 23464 | 34 | 0 | rmbellovin
+39 | 3 | 23584 | 12 | 0 | meta-introspector
+0 | 0 | 23654 | 11 | 0 | roed314
+0 | 0 | 23618 | 46 | 0 | JohnCremona
+0 | 0 | 23605 | 33 | 0 | tornaria
+0 | 0 | 23596 | 24 | 17 | assaferan
+0 | 0 | 23596 | 24 | 17 | adammlogan
+0 | 0 | 23592 | 20 | 0 | ReymondAkpanya
+0 | 0 | 23592 | 20 | 0 | jvoight
+0 | 0 | 23494 | 64 | 17 | havarddj
+0 | 0 | 23463 | 33 | 0 | hgu2699
+0 | 0 | 23442 | 12 | 0 | sparx-s
+0 | 0 | 23341 | 53 | 17 | PAMarcus
+0 | 0 | 23312 | 24 | 47 | changoo1119
+0 | 0 | 23290 | 2 | 17 | sayan1729
+0 | 0 | 23200 | 54 | 0 | Squirrelcoding
+0 | 0 | 23152 | 6 | 0 | pbharathwaj
+0 | 0 | 23143 | 68 | 0 | davidlowryduda
+0 | 0 | 23097 | 22 | 0 | lewismcombes
+0 | 0 | 23008 | 4 | 0 | BarinderBanwait
+0 | 0 | 22996 | 63 | 0 | liammay2
+0 | 0 | 22993 | 60 | 0 | alozanoroble
+0 | 0 | 22970 | 37 | 0 | stevehuang235
+0 | 0 | 22957 | 24 | 0 | everetthowe
+0 | 0 | 22934 | 1 | 0 | jwj61
+0 | 0 | 22862 | 0 | 94 | StevenClontz
+0 | 0 | 22861 | 70 | 0 | jonhanke
+0 | 0 | 22860 | 69 | 0 | wmahaney
+0 | 0 | 22860 | 69 | 0 | WissamGhantous
+0 | 0 | 22860 | 69 | 0 | MarkBcc168
+0 | 0 | 22860 | 69 | 0 | maniv013
+0 | 0 | 22860 | 69 | 0 | kfinnerty19
+0 | 0 | 22860 | 69 | 0 | htran1104
+0 | 0 | 22860 | 69 | 0 | eekarabiyik
+0 | 0 | 22860 | 69 | 0 | AjmainYamin
+0 | 0 | 22521 | 14 | 0 | koffie
+0 | 0 | 22513 | 6 | 47 | homan9883
+0 | 0 | 22500 | 64 | 0 | JaneShi99
+0 | 0 | 22475 | 39 | 0 | AstroNinja389
+0 | 0 | 22335 | 41 | 0 | wwylele
+0 | 0 | 22333 | 39 | 23 | junbolau
+0 | 0 | 22168 | 16 | 17 | sarangop1728
+0 | 0 | 22168 | 16 | 17 | arnaupadress
+0 | 0 | 22141 | 60 | 0 | jjahnel
+0 | 0 | 22012 | 2 | 0 | SunSteel
+0 | 0 | 21933 | 65 | 0 | socamk
+0 | 0 | 21779 | 53 | 0 | rbommel
+0 | 0 | 21690 | 35 | 0 | lihuibng
+0 | 0 | 21688 | 33 | 0 | asiminah
+0 | 0 | 21565 | 52 | 0 | HDaniels432
+0 | 0 | 13551 | 61 | 0 | jenpaulhus
+

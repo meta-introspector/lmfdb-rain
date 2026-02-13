@@ -1,0 +1,11 @@
+{
+  "fork_number": 8,
+  "fork_name": "meta-introspector",
+  "merge_date": "2026-02-13T11:10:07-05:00",
+  "git_commit": "c7b8cac46d38ce32f964e6479a6c91a334facccd",
+  "total_commits": 23754,
+  "database_file": "/home/mdupont/projects/kiro/data/lmfdb-incremental/databases/lmfdb_fork_8_meta-introspector.sql",
+  "database_size": 412,
+  "unique_files": 1,
+  "f_omega": 39
+}

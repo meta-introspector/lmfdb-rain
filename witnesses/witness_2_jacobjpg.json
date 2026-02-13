@@ -1,0 +1,11 @@
+{
+  "fork_number": 2,
+  "fork_name": "jacobjpg",
+  "merge_date": "2026-02-13T11:10:02-05:00",
+  "git_commit": "6340d1f298a63ca132689704f1f2e4161e3454a9",
+  "total_commits": 23678,
+  "database_file": "/home/mdupont/projects/kiro/data/lmfdb-incremental/databases/lmfdb_fork_2_jacobjpg.sql",
+  "database_size": 385,
+  "unique_files": 10,
+  "f_omega": 990
+}

@@ -1,0 +1,11 @@
+{
+  "fork_number": 10,
+  "fork_name": "JohnCremona",
+  "merge_date": "2026-02-13T11:10:09-05:00",
+  "git_commit": "2c2f0b1c22ff6af1ffb55f82d3d995b80234fe51",
+  "total_commits": 23758,
+  "database_file": "/home/mdupont/projects/kiro/data/lmfdb-incremental/databases/lmfdb_fork_10_JohnCremona.sql",
+  "database_size": 397,
+  "unique_files": 7,
+  "f_omega": 0
+}
