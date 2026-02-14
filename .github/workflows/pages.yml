@@ -17,9 +17,9 @@ jobs:
       - name: Setup Pages
         uses: meta-introspector/configure-pages@v3
       - name: Upload artifact
-        uses: meta-introspector/upload-pages-artifact@v2
+        uses: meta-introspector/upload-pages-artifact@v3
         with:
           path: '.'
       - name: Deploy to GitHub Pages
         id: deployment
-        uses: meta-introspector/deploy-pages@v2
+        uses: meta-introspector/deploy-pages@v4
