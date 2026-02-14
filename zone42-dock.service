@@ -1,0 +1,14 @@
+[Unit]
+Description=Zone 42 Docking Station
+After=network.target
+
+[Service]
+Type=simple
+User=mdupont
+WorkingDirectory=/home/mdupont/projects/kiro/data/lmfdb-hf-dataset
+ExecStart=/usr/bin/python3 /home/mdupont/projects/kiro/data/lmfdb-hf-dataset/dock_server.py
+Restart=always
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target
