@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Zone 42 Orbit Meme Viewer</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            background: #000;
+            color: #0f0;
+            font-family: 'Courier New', monospace;
+            padding: 20px;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        h1 { color: #0ff; margin-bottom: 20px; }
+        textarea {
+            width: 100%;
+            height: 200px;
+            background: #111;
+            color: #0f0;
+            border: 2px solid #0f0;
+            padding: 10px;
+            font-family: monospace;
+            margin-bottom: 20px;
+        }
+        button {
+            background: #0f0;
+            color: #000;
+            border: none;
+            padding: 10px 20px;
+            margin: 5px;
+            cursor: pointer;
+            font-family: monospace;
+            font-weight: bold;
+        }
+        button:hover { background: #0ff; }
+        .meme-display {
+            border: 2px solid #0ff;
+            padding: 20px;
+            margin: 20px 0;
+            background: rgba(0, 255, 255, 0.1);
+        }
+        .ascii-art {
+            white-space: pre;
+            color: #ff0;
+            font-size: 14px;
+        }
+        .links a {
+            color: #0ff;
+            text-decoration: none;
+            display: block;
+            margin: 5px 0;
+        }
+        .links a:hover { color: #ff0; }
+        .emoji { font-size: 48px; text-align: center; margin: 20px 0; }
+        .stats { color: #f0f; margin: 10px 0; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🌧️ Zone 42 Orbit Meme Viewer 🌧️</h1>
+        
+        <p>Paste your orbit meme JSON:</p>
+        <textarea id="meme-input" placeholder='Paste your Zone 42 orbit meme JSON here...'></textarea>
+        
+        <button onclick="loadMeme()">📖 Load Meme</button>
+        <button onclick="loadFromHash()">🔗 Load from URL Hash</button>
+        <button onclick="viewInPilot()">🚀 View in Pilot</button>
+        
+        <div id="meme-display"></div>
+    </div>
+
+    <script>
+        // Check for hash on load
+        window.addEventListener('load', () => {
+            if (window.location.hash) {
+                loadFromHash();
+            }
+        });
+        
+        function loadMeme() {
+            const input = document.getElementById('meme-input').value;
+            try {
+                const meme = JSON.parse(input);
+                displayMeme(meme);
+            } catch (e) {
+                alert('Invalid JSON: ' + e.message);
+            }
+        }
+        
+        function loadFromHash() {
+            const hash = window.location.hash.substring(1);
+            if (!hash) {
+                alert('No hash in URL');
+                return;
+            }
+            
+            // Create a sample meme from the hash (Gödel number)
+            const godel = parseInt(hash);
+            const meme = {
+                type: "zone42-orbit-meme",
+                title: "🌌 Elliptic Curve Orbit",
+                curves: 1,
+                godel: godel,
+                resultCurve: godel % 4968,
+                band: Math.floor((godel % 4968) / 828),
+                formula: `Gödel ${godel} mod 4968 = ${godel % 4968}`,
+                share: {
+                    rdfa: `https://github.com/Escaped-RDFa/namespace#orbit-${godel}`,
+                    proof: `https://github.com/meta-introspector/zkperf/proofs/${godel}`,
+                    visual: `https://meta-introspector.github.io/lmfdb-rain/pilot.html#${godel}`
+                }
+            };
+            
+            document.getElementById('meme-input').value = JSON.stringify(meme, null, 2);
+            displayMeme(meme);
+        }
+        
+        function displayMeme(meme) {
+            const display = document.getElementById('meme-display');
+            
+            const bandColors = ['#f00', '#ff0', '#0f0', '#0ff', '#00f', '#f0f'];
+            const bandColor = bandColors[meme.band];
+            
+            display.innerHTML = `
+                <div class="meme-display">
+                    <div class="emoji">${meme.title.match(/[^\w\s]/g)?.join('') || '🌌'}</div>
+                    <h2 style="color: ${bandColor}; text-align: center;">${meme.title}</h2>
+                    
+                    ${meme.ascii ? `<div class="ascii-art">${meme.ascii}</div>` : ''}
+                    
+                    <div class="stats">
+                        <p>📊 Curves Combined: ${meme.curves}</p>
+                        <p>🔢 Gödel Number: ${meme.godel}</p>
+                        <p>🎯 Result Curve: ${meme.resultCurve} / 4968</p>
+                        <p>🌈 Frequency Band: ${meme.band} (${['Red', 'Yellow', 'Green', 'Cyan', 'Blue', 'Magenta'][meme.band]})</p>
+                        <p>📐 Formula: ${meme.formula}</p>
+                    </div>
+                    
+                    <div class="links">
+                        <h3 style="color: #0ff; margin-top: 20px;">🔗 Share Links:</h3>
+                        <a href="${meme.share.rdfa}" target="_blank">📤 RDFa Namespace</a>
+                        <a href="${meme.share.proof}" target="_blank">🔐 zkPerf Proof</a>
+                        <a href="${meme.share.visual}" target="_blank">🎨 Visual Pilot</a>
+                    </div>
+                    
+                    <button onclick="copyToClipboard()">📋 Copy JSON</button>
+                    <button onclick="downloadRDFa(${meme.godel})">📥 Download RDFa</button>
+                    <button onclick="downloadProof(${meme.godel})">🔐 Download Proof</button>
+                </div>
+            `;
+        }
+        
+        function viewInPilot() {
+            const input = document.getElementById('meme-input').value;
+            try {
+                const meme = JSON.parse(input);
+                window.location.href = `pilot.html#${meme.godel}`;
+            } catch (e) {
+                alert('Invalid JSON: ' + e.message);
+            }
+        }
+        
+        function copyToClipboard() {
+            const input = document.getElementById('meme-input').value;
+            navigator.clipboard.writeText(input).then(() => {
+                alert('📋 Copied to clipboard!');
+            });
+        }
+        
+        function downloadRDFa(godel) {
+            const rdfa = `<?xml version="1.0" encoding="UTF-8"?>
+<rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+         xmlns:zone42="https://github.com/Escaped-RDFa/namespace#"
+         xmlns:lmfdb="https://www.lmfdb.org/EllipticCurve/">
+  <zone42:Orbit rdf:about="#orbit-${godel}">
+    <zone42:godelNumber>${godel}</zone42:godelNumber>
+    <zone42:curveIndex>${godel % 4968}</zone42:curveIndex>
+    <zone42:frequencyBand>${Math.floor((godel % 4968) / 828)}</zone42:frequencyBand>
+    <zone42:timestamp>${new Date().toISOString()}</zone42:timestamp>
+  </zone42:Orbit>
+</rdf:RDF>`;
+            
+            const blob = new Blob([rdfa], { type: 'application/rdf+xml' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `zone42-orbit-${godel}.rdf`;
+            a.click();
+        }
+        
+        function downloadProof(godel) {
+            const proof = {
+                version: "zkperf-v1",
+                timestamp: new Date().toISOString(),
+                claim: {
+                    type: "elliptic-curve-orbit",
+                    godel: godel,
+                    curve: godel % 4968,
+                    band: Math.floor((godel % 4968) / 828)
+                },
+                proof: {
+                    protocol: "reed-solomon-fractran",
+                    monsterGroup: "2^46 × 3^20 × 5^9 × 7^6 × 11^2 × 13^3 × 17 × 19",
+                    verification: "∀ curve. decode(encode(curve)) = curve"
+                },
+                metadata: {
+                    repository: "https://github.com/meta-introspector/zkperf",
+                    namespace: "https://github.com/Escaped-RDFa/namespace",
+                    dataset: "https://huggingface.co/datasets/introspector/lmfdb"
+                }
+            };
+            
+            const blob = new Blob([JSON.stringify(proof, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `zkperf-proof-${godel}.json`;
+            a.click();
+        }
+    </script>
+</body>
+</html>
