@@ -1,0 +1,549 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Zone 42 Orbit Pilot - LMFDB Navigator</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            background: #000;
+            color: #0f0;
+            font-family: 'Courier New', monospace;
+            overflow: hidden;
+        }
+        #canvas {
+            display: block;
+            width: 100vw;
+            height: 100vh;
+        }
+        #hud {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            background: rgba(0, 0, 0, 0.8);
+            padding: 15px;
+            border: 2px solid #0ff;
+            max-width: 300px;
+        }
+        #inventory {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: rgba(0, 0, 0, 0.8);
+            padding: 15px;
+            border: 2px solid #f0f;
+            max-width: 300px;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+        #controls {
+            position: absolute;
+            bottom: 20px;
+            left: 20px;
+            background: rgba(0, 0, 0, 0.8);
+            padding: 15px;
+            border: 2px solid #ff0;
+        }
+        .curve-item {
+            padding: 5px;
+            margin: 5px 0;
+            border: 1px solid #0f0;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .curve-item:hover {
+            background: rgba(0, 255, 0, 0.2);
+            border-color: #0ff;
+        }
+        .curve-item.selected {
+            background: rgba(0, 255, 255, 0.3);
+            border-color: #0ff;
+        }
+        button {
+            background: #0f0;
+            color: #000;
+            border: none;
+            padding: 8px 15px;
+            margin: 5px;
+            cursor: pointer;
+            font-family: monospace;
+            font-weight: bold;
+        }
+        button:hover {
+            background: #0ff;
+        }
+        .emoji { font-size: 20px; }
+        .ship { color: #ff0; font-size: 24px; }
+        h3 { color: #0ff; margin-bottom: 10px; }
+        .stat { color: #f0f; }
+    </style>
+</head>
+<body>
+    <canvas id="canvas"></canvas>
+    
+    <div id="hud">
+        <h3>🚀 SHIP STATUS</h3>
+        <div>Position: <span id="ship-x">0</span>, <span id="ship-y">0</span></div>
+        <div>Speed: <span id="ship-speed">0</span></div>
+        <div>Target: <span id="target">None</span></div>
+        <div>Collected: <span id="collected-count">0</span> curves</div>
+    </div>
+    
+    <div id="inventory">
+        <h3>📦 CURVE INVENTORY</h3>
+        <div id="inventory-list">Empty - Land on orbits to collect curves</div>
+        <button onclick="combineSelected()">🔮 Combine Selected</button>
+        <button onclick="createOrbit()">✨ Create New Orbit</button>
+        <button onclick="exportOrbit()">📤 Export as RDFa</button>
+        <button onclick="generateProof()">🔐 Generate zkPerf Proof</button>
+        <button onclick="shareAsMeme()">🎨 Share as Meme</button>
+    </div>
+    
+    <div id="controls">
+        <h3>⌨️ CONTROLS</h3>
+        <div>WASD / Arrow Keys: Move ship</div>
+        <div>Space: Land on orbit</div>
+        <div>E: Collect curve</div>
+        <div>Click: Select inventory item</div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+        
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+        
+        // Ship state
+        const ship = {
+            x: canvas.width / 2,
+            y: canvas.height / 2,
+            vx: 0,
+            vy: 0,
+            speed: 0,
+            angle: 0,
+            landed: null
+        };
+        
+        // Curve orbits
+        const orbits = [];
+        const inventory = [];
+        let selectedItems = new Set();
+        
+        // Generate initial orbits from frequency bands
+        const colors = ['#f00', '#ff0', '#0f0', '#0ff', '#00f', '#f0f'];
+        const vibeEmojis = {
+            0: ['🌌', '⭐', '✨', '🌠'],
+            1: ['🔥', '🌋', '☄️', '💥'],
+            2: ['💧', '🌊', '💦', '🌀'],
+            3: ['🌍', '🏔️', '🌲', '🗿'],
+            4: ['💨', '🦅', '☁️', '🌪️'],
+            5: ['⚡', '🌩️', '🔋', '⚙️'],
+            6: ['🌙', '🌑', '🌜', '🌛'],
+            7: ['☀️', '🌞', '🌅', '🌄']
+        };
+        
+        // Create orbiting structures
+        for (let i = 0; i < 20; i++) {
+            const angle = (i / 20) * Math.PI * 2;
+            const radius = 200 + Math.random() * 300;
+            const centerX = canvas.width / 2;
+            const centerY = canvas.height / 2;
+            
+            const vibe = Math.floor(Math.random() * 8);
+            const emoji = vibeEmojis[vibe][Math.floor(Math.random() * 4)];
+            const curveIdx = Math.floor(Math.random() * 4968);
+            const band = Math.floor(curveIdx / 828);
+            
+            orbits.push({
+                centerX,
+                centerY,
+                radius,
+                angle,
+                speed: 0.01 + Math.random() * 0.02,
+                emoji,
+                curveIdx,
+                band,
+                color: colors[band],
+                godel: 1000 + curveIdx,
+                conductor: 11 + curveIdx % 100,
+                rank: curveIdx % 5
+            });
+        }
+        
+        // Keyboard controls
+        const keys = {};
+        window.addEventListener('keydown', e => {
+            keys[e.key.toLowerCase()] = true;
+            
+            if (e.key === ' ') {
+                e.preventDefault();
+                tryLand();
+            }
+            if (e.key.toLowerCase() === 'e') {
+                collectCurve();
+            }
+        });
+        window.addEventListener('keyup', e => keys[e.key.toLowerCase()] = false);
+        
+        function updateShip() {
+            // Movement
+            const accel = 0.5;
+            if (keys['w'] || keys['arrowup']) ship.vy -= accel;
+            if (keys['s'] || keys['arrowdown']) ship.vy += accel;
+            if (keys['a'] || keys['arrowleft']) ship.vx -= accel;
+            if (keys['d'] || keys['arrowright']) ship.vx += accel;
+            
+            // Apply velocity
+            ship.x += ship.vx;
+            ship.y += ship.vy;
+            
+            // Friction
+            ship.vx *= 0.98;
+            ship.vy *= 0.98;
+            
+            // Wrap around
+            if (ship.x < 0) ship.x = canvas.width;
+            if (ship.x > canvas.width) ship.x = 0;
+            if (ship.y < 0) ship.y = canvas.height;
+            if (ship.y > canvas.height) ship.y = 0;
+            
+            ship.speed = Math.sqrt(ship.vx * ship.vx + ship.vy * ship.vy);
+            ship.angle = Math.atan2(ship.vy, ship.vx);
+        }
+        
+        function tryLand() {
+            for (let orbit of orbits) {
+                const x = orbit.centerX + Math.cos(orbit.angle) * orbit.radius;
+                const y = orbit.centerY + Math.sin(orbit.angle) * orbit.radius;
+                const dist = Math.sqrt((ship.x - x) ** 2 + (ship.y - y) ** 2);
+                
+                if (dist < 50) {
+                    ship.landed = orbit;
+                    ship.vx = 0;
+                    ship.vy = 0;
+                    document.getElementById('target').textContent = 
+                        `${orbit.emoji} Curve ${orbit.curveIdx}`;
+                    return;
+                }
+            }
+        }
+        
+        function collectCurve() {
+            if (ship.landed) {
+                inventory.push({...ship.landed, id: Date.now()});
+                updateInventory();
+                ship.landed = null;
+                document.getElementById('target').textContent = 'None';
+            }
+        }
+        
+        function updateInventory() {
+            const list = document.getElementById('inventory-list');
+            if (inventory.length === 0) {
+                list.innerHTML = 'Empty - Land on orbits to collect curves';
+                return;
+            }
+            
+            list.innerHTML = inventory.map((item, i) => `
+                <div class="curve-item ${selectedItems.has(i) ? 'selected' : ''}" 
+                     onclick="toggleSelect(${i})">
+                    <span class="emoji">${item.emoji}</span> 
+                    Curve ${item.curveIdx} 
+                    <span class="stat">(G:${item.godel}, R:${item.rank})</span>
+                </div>
+            `).join('');
+            
+            document.getElementById('collected-count').textContent = inventory.length;
+        }
+        
+        function toggleSelect(index) {
+            if (selectedItems.has(index)) {
+                selectedItems.delete(index);
+            } else {
+                selectedItems.add(index);
+            }
+            updateInventory();
+        }
+        
+        function combineSelected() {
+            if (selectedItems.size < 2) {
+                alert('Select at least 2 curves to combine!');
+                return;
+            }
+            
+            const selected = Array.from(selectedItems).map(i => inventory[i]);
+            
+            // Combine Gödel numbers
+            const combinedGodel = selected.reduce((sum, item) => sum + item.godel, 0);
+            const combinedCurveIdx = combinedGodel % 4968;
+            const band = Math.floor(combinedCurveIdx / 828);
+            const vibe = combinedGodel % 8;
+            const emoji = vibeEmojis[vibe][Math.floor(Math.random() * 4)];
+            
+            alert(`🔮 Combined ${selected.length} curves!\nNew Curve: ${combinedCurveIdx}\nGödel: ${combinedGodel}`);
+            
+            // Add to inventory
+            inventory.push({
+                emoji,
+                curveIdx: combinedCurveIdx,
+                band,
+                color: colors[band],
+                godel: combinedGodel,
+                conductor: combinedGodel % 1000,
+                rank: combinedGodel % 5,
+                id: Date.now(),
+                combined: true
+            });
+            
+            selectedItems.clear();
+            updateInventory();
+        }
+        
+        function createOrbit() {
+            if (selectedItems.size === 0) {
+                alert('Select curves to create orbit!');
+                return;
+            }
+            
+            const selected = Array.from(selectedItems).map(i => inventory[i]);
+            const combinedGodel = selected.reduce((sum, item) => sum + item.godel, 0);
+            const combinedCurveIdx = combinedGodel % 4968;
+            const band = Math.floor(combinedCurveIdx / 828);
+            const vibe = combinedGodel % 8;
+            const emoji = vibeEmojis[vibe][Math.floor(Math.random() * 4)];
+            
+            // Create new orbit at ship position
+            orbits.push({
+                centerX: ship.x,
+                centerY: ship.y,
+                radius: 100 + Math.random() * 100,
+                angle: Math.random() * Math.PI * 2,
+                speed: 0.02,
+                emoji,
+                curveIdx: combinedCurveIdx,
+                band,
+                color: colors[band],
+                godel: combinedGodel,
+                conductor: combinedGodel % 1000,
+                rank: combinedGodel % 5,
+                custom: true
+            });
+            
+            alert(`✨ Created new orbit!\nCurve: ${combinedCurveIdx}\nPosition: (${Math.floor(ship.x)}, ${Math.floor(ship.y)})`);
+            
+            selectedItems.clear();
+            updateInventory();
+        }
+        
+        function exportOrbit() {
+            if (selectedItems.size === 0) {
+                alert('Select curves to export!');
+                return;
+            }
+            
+            const selected = Array.from(selectedItems).map(i => inventory[i]);
+            const combinedGodel = selected.reduce((sum, item) => sum + item.godel, 0);
+            
+            // Generate RDFa namespace format
+            const rdfa = `<?xml version="1.0" encoding="UTF-8"?>
+<rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+         xmlns:zone42="https://github.com/Escaped-RDFa/namespace#"
+         xmlns:lmfdb="https://www.lmfdb.org/EllipticCurve/">
+  <zone42:Orbit rdf:about="#orbit-${Date.now()}">
+    <zone42:godelNumber>${combinedGodel}</zone42:godelNumber>
+    <zone42:curveIndex>${combinedGodel % 4968}</zone42:curveIndex>
+    <zone42:frequencyBand>${Math.floor((combinedGodel % 4968) / 828)}</zone42:frequencyBand>
+    <zone42:components>
+${selected.map(c => `      <zone42:Curve rdf:resource="lmfdb:Q/${c.curveIdx}"/>`).join('\n')}
+    </zone42:components>
+    <zone42:emoji>${selected[0].emoji}</zone42:emoji>
+    <zone42:timestamp>${new Date().toISOString()}</zone42:timestamp>
+  </zone42:Orbit>
+</rdf:RDF>`;
+            
+            // Download as file
+            const blob = new Blob([rdfa], { type: 'application/rdf+xml' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `zone42-orbit-${combinedGodel % 10000}.rdf`;
+            a.click();
+            
+            alert('📤 Exported as RDFa!\nNamespace: https://github.com/Escaped-RDFa/namespace');
+        }
+        
+        function generateProof() {
+            if (selectedItems.size === 0) {
+                alert('Select curves to prove!');
+                return;
+            }
+            
+            const selected = Array.from(selectedItems).map(i => inventory[i]);
+            const combinedGodel = selected.reduce((sum, item) => sum + item.godel, 0);
+            
+            // Generate zkPerf proof format
+            const proof = {
+                version: "zkperf-v1",
+                timestamp: new Date().toISOString(),
+                claim: {
+                    type: "elliptic-curve-combination",
+                    inputs: selected.map(c => ({
+                        curveIndex: c.curveIdx,
+                        godel: c.godel,
+                        conductor: c.conductor,
+                        rank: c.rank
+                    })),
+                    output: {
+                        combinedGodel: combinedGodel,
+                        resultCurve: combinedGodel % 4968,
+                        frequencyBand: Math.floor((combinedGodel % 4968) / 828)
+                    }
+                },
+                proof: {
+                    protocol: "reed-solomon-fractran",
+                    monsterGroup: "2^46 × 3^20 × 5^9 × 7^6 × 11^2 × 13^3 × 17 × 19",
+                    witness: selected.map(c => c.godel).join(','),
+                    verification: "∀ curve. decode(encode(curve)) = curve",
+                    univalence: "MatrixRainBundle ≃ LMFDB_EllipticCurves"
+                },
+                metadata: {
+                    repository: "https://github.com/meta-introspector/zkperf",
+                    namespace: "https://github.com/Escaped-RDFa/namespace",
+                    dataset: "https://huggingface.co/datasets/introspector/lmfdb"
+                }
+            };
+            
+            // Download as JSON
+            const blob = new Blob([JSON.stringify(proof, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `zkperf-proof-${combinedGodel % 10000}.json`;
+            a.click();
+            
+            alert('🔐 zkPerf proof generated!\nRepo: https://github.com/meta-introspector/zkperf');
+        }
+        
+        function shareAsMeme() {
+            if (selectedItems.size === 0) {
+                alert('Select curves to meme!');
+                return;
+            }
+            
+            const selected = Array.from(selectedItems).map(i => inventory[i]);
+            const combinedGodel = selected.reduce((sum, item) => sum + item.godel, 0);
+            const emoji = selected.map(c => c.emoji).join('');
+            
+            // Generate meme format
+            const meme = {
+                type: "zone42-orbit-meme",
+                title: `${emoji} Elliptic Curve Orbit`,
+                curves: selected.length,
+                godel: combinedGodel,
+                resultCurve: combinedGodel % 4968,
+                band: Math.floor((combinedGodel % 4968) / 828),
+                formula: `Σ(${selected.map(c => c.curveIdx).join(' + ')}) mod 4968 = ${combinedGodel % 4968}`,
+                share: {
+                    rdfa: `https://github.com/Escaped-RDFa/namespace#orbit-${combinedGodel}`,
+                    proof: `https://github.com/meta-introspector/zkperf/proofs/${combinedGodel}`,
+                    visual: `https://meta-introspector.github.io/lmfdb-rain/pilot.html#${combinedGodel}`
+                },
+                ascii: `
+╔════════════════════════════════╗
+║   ${emoji} ZONE 42 ORBIT ${emoji}   ║
+╠════════════════════════════════╣
+║ Curves: ${selected.length}                    ║
+║ Gödel: ${combinedGodel}              ║
+║ Result: ${combinedGodel % 4968}                  ║
+║ Band: ${Math.floor((combinedGodel % 4968) / 828)}                      ║
+╚════════════════════════════════╝
+                `
+            };
+            
+            // Copy to clipboard
+            const text = JSON.stringify(meme, null, 2);
+            navigator.clipboard.writeText(text).then(() => {
+                alert('🎨 Meme copied to clipboard!\n\nShare on:\n- GitHub: Escaped-RDFa/namespace\n- zkPerf: meta-introspector/zkperf\n- HuggingFace: introspector/lmfdb');
+            });
+        }
+        
+        function draw() {
+            // Clear with fade
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.1)';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            // Draw orbits
+            for (let orbit of orbits) {
+                orbit.angle += orbit.speed;
+                
+                const x = orbit.centerX + Math.cos(orbit.angle) * orbit.radius;
+                const y = orbit.centerY + Math.sin(orbit.angle) * orbit.radius;
+                
+                // Orbit path
+                ctx.strokeStyle = orbit.color + '33';
+                ctx.lineWidth = 1;
+                ctx.beginPath();
+                ctx.arc(orbit.centerX, orbit.centerY, orbit.radius, 0, Math.PI * 2);
+                ctx.stroke();
+                
+                // Curve structure
+                ctx.fillStyle = orbit.color;
+                ctx.font = '24px monospace';
+                ctx.fillText(orbit.emoji, x - 12, y + 8);
+                
+                // Curve number
+                ctx.fillStyle = '#f00';
+                ctx.font = '12px monospace';
+                ctx.fillText(orbit.curveIdx % 1000, x + 15, y);
+                
+                // Custom orbit marker
+                if (orbit.custom) {
+                    ctx.strokeStyle = '#ff0';
+                    ctx.lineWidth = 2;
+                    ctx.beginPath();
+                    ctx.arc(x, y, 30, 0, Math.PI * 2);
+                    ctx.stroke();
+                }
+            }
+            
+            // Draw ship
+            ctx.save();
+            ctx.translate(ship.x, ship.y);
+            ctx.rotate(ship.angle);
+            ctx.fillStyle = '#ff0';
+            ctx.font = '24px monospace';
+            ctx.fillText('🚀', -12, 8);
+            ctx.restore();
+            
+            // Landing indicator
+            if (ship.landed) {
+                ctx.strokeStyle = '#0ff';
+                ctx.lineWidth = 3;
+                ctx.beginPath();
+                ctx.arc(ship.x, ship.y, 40, 0, Math.PI * 2);
+                ctx.stroke();
+            }
+            
+            // Update HUD
+            document.getElementById('ship-x').textContent = Math.floor(ship.x);
+            document.getElementById('ship-y').textContent = Math.floor(ship.y);
+            document.getElementById('ship-speed').textContent = ship.speed.toFixed(2);
+        }
+        
+        function animate() {
+            updateShip();
+            draw();
+            requestAnimationFrame(animate);
+        }
+        
+        animate();
+        
+        window.addEventListener('resize', () => {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        });
+    </script>
+</body>
+</html>
