@@ -26,6 +26,35 @@
             border: 2px solid #0ff;
             max-width: 300px;
         }
+        #warp-mode {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: #000;
+            z-index: 1000;
+            display: none;
+        }
+        #warp-mode.active {
+            display: block;
+        }
+        .warp-text {
+            position: absolute;
+            color: #0f0;
+            font-size: 14px;
+            animation: warp 2s linear forwards;
+        }
+        @keyframes warp {
+            from {
+                transform: translateZ(0) scale(1);
+                opacity: 1;
+            }
+            to {
+                transform: translateZ(1000px) scale(10);
+                opacity: 0;
+            }
+        }
         #inventory {
             position: absolute;
             top: 20px;
@@ -82,6 +111,10 @@
 <body>
     <canvas id="canvas"></canvas>
     
+    <div id="warp-mode">
+        <canvas id="warp-canvas"></canvas>
+    </div>
+    
     <div id="hud">
         <h3>🚀 SHIP STATUS</h3>
         <div>Position: <span id="ship-x">0</span>, <span id="ship-y">0</span></div>
@@ -105,15 +138,22 @@
         <div>WASD / Arrow Keys: Move ship</div>
         <div>Space: Land on orbit</div>
         <div>E: Collect curve</div>
-        <div>Click: Select inventory item</div>
+        <div>Click orbit: Select for warp</div>
+        <div>W: Enter WARP DRIVE (with selected)</div>
+        <div>Q: Exit warp mode</div>
     </div>
 
     <script>
         const canvas = document.getElementById('canvas');
         const ctx = canvas.getContext('2d');
         
+        const warpCanvas = document.getElementById('warp-canvas');
+        const warpCtx = warpCanvas.getContext('2d');
+        
         canvas.width = window.innerWidth;
         canvas.height = window.innerHeight;
+        warpCanvas.width = window.innerWidth;
+        warpCanvas.height = window.innerHeight;
         
         // Ship state
         const ship = {
@@ -125,6 +165,11 @@
             angle: 0,
             landed: null
         };
+        
+        // Warp state
+        let warpMode = false;
+        let warpTargets = [];
+        let warpFrame = 0;
         
         // Curve orbits
         const orbits = [];
@@ -184,8 +229,45 @@
             if (e.key.toLowerCase() === 'e') {
                 collectCurve();
             }
+            if (e.key.toLowerCase() === 'q' && warpMode) {
+                exitWarp();
+            }
         });
         window.addEventListener('keyup', e => keys[e.key.toLowerCase()] = false);
+        
+        // Click to select orbit for warp
+        canvas.addEventListener('click', e => {
+            const rect = canvas.getBoundingClientRect();
+            const clickX = e.clientX - rect.left;
+            const clickY = e.clientY - rect.top;
+            
+            for (let orbit of orbits) {
+                const x = orbit.centerX + Math.cos(orbit.angle) * orbit.radius;
+                const y = orbit.centerY + Math.sin(orbit.angle) * orbit.radius;
+                const dist = Math.sqrt((clickX - x) ** 2 + (clickY - y) ** 2);
+                
+                if (dist < 30) {
+                    orbit.selected = !orbit.selected;
+                    if (orbit.selected) {
+                        warpTargets.push(orbit);
+                    } else {
+                        warpTargets = warpTargets.filter(o => o !== orbit);
+                    }
+                    
+                    if (warpTargets.length > 0) {
+                        document.getElementById('target').textContent = 
+                            `${warpTargets.length} orbits selected - Press W to WARP!`;
+                    }
+                    return;
+                }
+            }
+        });
+        
+        window.addEventListener('keydown', e => {
+            if (e.key.toLowerCase() === 'w' && warpTargets.length > 0 && !warpMode) {
+                enterWarp();
+            }
+        });
         
         function updateShip() {
             // Movement
@@ -469,6 +551,69 @@ ${selected.map(c => `      <zone42:Curve rdf:resource="lmfdb:Q/${c.curveIdx}"/>`
             });
         }
         
+        function enterWarp() {
+            warpMode = true;
+            warpFrame = 0;
+            document.getElementById('warp-mode').classList.add('active');
+            document.getElementById('target').textContent = 'WARP DRIVE ENGAGED! Press Q to exit';
+        }
+        
+        function exitWarp() {
+            warpMode = false;
+            warpTargets.forEach(o => o.selected = false);
+            warpTargets = [];
+            document.getElementById('warp-mode').classList.remove('active');
+            document.getElementById('target').textContent = 'None';
+        }
+        
+        function drawWarp() {
+            warpCtx.fillStyle = 'rgba(0, 0, 0, 0.1)';
+            warpCtx.fillRect(0, 0, warpCanvas.width, warpCanvas.height);
+            
+            // Matrix rain effect with selected orbit data
+            const cols = 40;
+            const rows = 20;
+            
+            for (let col = 0; col < cols; col++) {
+                for (let row = 0; row < rows; row++) {
+                    const targetIdx = col % warpTargets.length;
+                    const target = warpTargets[targetIdx];
+                    const color = target.color;
+                    
+                    const x = (col / cols) * warpCanvas.width;
+                    const y = ((row + warpFrame * 0.5) % rows) / rows * warpCanvas.height;
+                    
+                    // Falling symbols
+                    if ((warpFrame + col + row) % 5 === 0) {
+                        warpCtx.fillStyle = color;
+                        warpCtx.font = '16px monospace';
+                        const symbols = ['A', 'AIII', 'AI', 'BDI', 'D', 'DIII', 'AII', 'CII', 'C', 'CI'];
+                        const symbol = symbols[(warpFrame + col) % symbols.length];
+                        warpCtx.fillText(symbol + (2 + (warpFrame % 15) * 3), x, y);
+                    }
+                    
+                    // Emojis with curve numbers
+                    if ((warpFrame + col + row) % 7 === 0) {
+                        warpCtx.fillStyle = color;
+                        warpCtx.font = '20px monospace';
+                        warpCtx.fillText(target.emoji, x, y);
+                        warpCtx.fillStyle = '#f00';
+                        warpCtx.font = '12px monospace';
+                        warpCtx.fillText(target.curveIdx % 1000, x + 25, y);
+                    }
+                }
+            }
+            
+            // Warp speed indicator
+            warpCtx.fillStyle = '#0ff';
+            warpCtx.font = '24px monospace';
+            warpCtx.fillText(`WARP ${warpTargets.length}x`, warpCanvas.width / 2 - 60, 50);
+            warpCtx.font = '16px monospace';
+            warpCtx.fillText(`Following ${warpTargets.map(t => t.emoji).join(' ')}`, warpCanvas.width / 2 - 100, 80);
+            
+            warpFrame++;
+        }
+        
         function draw() {
             // Clear with fade
             ctx.fillStyle = 'rgba(0, 0, 0, 0.1)';
@@ -498,9 +643,22 @@ ${selected.map(c => `      <zone42:Curve rdf:resource="lmfdb:Q/${c.curveIdx}"/>`
                 ctx.font = '12px monospace';
                 ctx.fillText(orbit.curveIdx % 1000, x + 15, y);
                 
+                // Selected orbit highlight
+                if (orbit.selected) {
+                    ctx.strokeStyle = '#ff0';
+                    ctx.lineWidth = 3;
+                    ctx.beginPath();
+                    ctx.arc(x, y, 35, 0, Math.PI * 2);
+                    ctx.stroke();
+                    
+                    ctx.fillStyle = '#ff0';
+                    ctx.font = '16px monospace';
+                    ctx.fillText('★', x - 8, y - 25);
+                }
+                
                 // Custom orbit marker
                 if (orbit.custom) {
-                    ctx.strokeStyle = '#ff0';
+                    ctx.strokeStyle = '#0ff';
                     ctx.lineWidth = 2;
                     ctx.beginPath();
                     ctx.arc(x, y, 30, 0, Math.PI * 2);
@@ -533,8 +691,12 @@ ${selected.map(c => `      <zone42:Curve rdf:resource="lmfdb:Q/${c.curveIdx}"/>`
         }
         
         function animate() {
-            updateShip();
-            draw();
+            if (warpMode) {
+                drawWarp();
+            } else {
+                updateShip();
+                draw();
+            }
             requestAnimationFrame(animate);
         }
         
