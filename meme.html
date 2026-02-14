@@ -61,6 +61,7 @@
     </style>
 </head>
 <body>
+    <script src="emoji-lattice.js"></script>
     <div class="container">
         <h1>🌧️ Zone 42 Orbit Meme Viewer 🌧️</h1>
         
@@ -77,10 +78,56 @@
     <script>
         // Check for hash on load
         window.addEventListener('load', () => {
-            if (window.location.hash) {
+            const params = new URLSearchParams(window.location.search);
+            const rdfa = params.get('rdfa');
+            const namespace = params.get('namespace');
+            
+            if (rdfa) {
+                loadFromRDFa(decodeURIComponent(rdfa));
+            } else if (namespace) {
+                loadFromNamespace(decodeURIComponent(namespace));
+            } else if (window.location.hash) {
                 loadFromHash();
             }
         });
+        
+        function loadFromRDFa(rdfaUrl) {
+            // Parse RDFa URL: https://github.com/Escaped-RDFa/namespace#orbit-15370
+            const match = rdfaUrl.match(/#orbit-(\d+)/);
+            if (match) {
+                const godel = parseInt(match[1]);
+                loadOrbitByGodel(godel);
+            }
+        }
+        
+        function loadFromNamespace(namespace) {
+            // Parse namespace: Escaped-RDFa/namespace#orbit-15370
+            const match = namespace.match(/#orbit-(\d+)/);
+            if (match) {
+                const godel = parseInt(match[1]);
+                loadOrbitByGodel(godel);
+            }
+        }
+        
+        function loadOrbitByGodel(godel) {
+            const meme = {
+                type: "zone42-orbit-meme",
+                title: "🌌 Elliptic Curve Orbit",
+                curves: 1,
+                godel: godel,
+                resultCurve: godel % 4968,
+                band: Math.floor((godel % 4968) / 828),
+                formula: `Gödel ${godel} mod 4968 = ${godel % 4968}`,
+                share: {
+                    rdfa: `https://github.com/Escaped-RDFa/namespace#orbit-${godel}`,
+                    proof: `https://github.com/meta-introspector/zkperf/proofs/${godel}`,
+                    visual: `https://meta-introspector.github.io/lmfdb-rain/pilot.html#${godel}`
+                }
+            };
+            
+            document.getElementById('meme-input').value = JSON.stringify(meme, null, 2);
+            displayMeme(meme);
+        }
         
         function loadMeme() {
             const input = document.getElementById('meme-input').value;
@@ -173,23 +220,42 @@
         }
         
         function downloadRDFa(godel) {
-            const rdfa = `<?xml version="1.0" encoding="UTF-8"?>
-<rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
-         xmlns:zone42="https://github.com/Escaped-RDFa/namespace#"
-         xmlns:lmfdb="https://www.lmfdb.org/EllipticCurve/">
-  <zone42:Orbit rdf:about="#orbit-${godel}">
-    <zone42:godelNumber>${godel}</zone42:godelNumber>
-    <zone42:curveIndex>${godel % 4968}</zone42:curveIndex>
-    <zone42:frequencyBand>${Math.floor((godel % 4968) / 828)}</zone42:frequencyBand>
-    <zone42:timestamp>${new Date().toISOString()}</zone42:timestamp>
-  </zone42:Orbit>
-</rdf:RDF>`;
+            const curveIdx = godel % 4968;
+            const band = Math.floor(curveIdx / 828);
             
-            const blob = new Blob([rdfa], { type: 'application/rdf+xml' });
+            // Create Maass shadow
+            const shadow = new MaassShadow(godel, curveIdx, band);
+            
+            const turtle = `@prefix dc: <http://purl.org/dc/terms/> .
+@prefix erdfa: <https://escaped-rdfa.github.io/namespace/docs/1.0.html#> .
+@prefix zone42: <https://solana.solfunmeme.com/zone42#> .
+@prefix lmfdb: <https://www.lmfdb.org/EllipticCurve/Q/> .
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+
+# LMFDB Entry + Maass Shadow
+# This orbit carries spectral data that must be preserved
+
+<> erdfa:embedded [ a zone42:Orbit ;
+        zone42:godelNumber "${godel}"^^xsd:integer ;
+        zone42:curveIndex "${curveIdx}"^^xsd:integer ;
+        zone42:frequencyBand "${band}"^^xsd:integer ;
+        zone42:bandColor "${['Red', 'Yellow', 'Green', 'Cyan', 'Blue', 'Magenta'][band]}" ;
+        zone42:lmfdbCurve lmfdb:${curveIdx} ;
+        ${shadow.toRDFa()}
+        dc:created "${new Date().toISOString()}"^^xsd:dateTime ;
+        dc:creator "Zone42 Orbit Pilot" ;
+        dc:description "LMFDB elliptic curve entry with Maass shadow - spectral data encoded in emoji lattice" ;
+        zone42:proof <https://github.com/meta-introspector/zkperf/proofs/${godel}> ;
+        zone42:visual <https://solana.solfunmeme.com/pilot.html#${godel}> ;
+        zone42:emojiEncoding "${shadow.toEmoji().join('')}" ;
+    ] .`;
+            
+            const blob = new Blob([turtle], { type: 'text/turtle' });
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = url;
-            a.download = `zone42-orbit-${godel}.rdf`;
+            a.download = `zone42-orbit-${godel}-with-shadow.ttl`;
             a.click();
         }
         
